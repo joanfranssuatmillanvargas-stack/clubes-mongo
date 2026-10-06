@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clubes | Relaciones FC</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="../static/css/estadio.css" th:href="@{/css/estadio.css}">
+</head>
+<body>
+
+<!-- ===== Encabezado para moverse entre las páginas ===== -->
+<header class="marcador">
+  <div class="container d-flex flex-wrap align-items-center justify-content-between gap-3 py-3">
+    <a class="marca" th:href="@{/}">
+      <span class="marca-balon"><i class="bi bi-dribbble"></i></span> Relaciones FC
+    </a>
+    <nav class="menu" aria-label="Secciones">
+      <a th:href="@{/}"><i class="bi bi-pencil-square"></i> Registrar</a>
+      <a class="activo" aria-current="page" th:href="@{/listar}"><i class="bi bi-shield-shaded"></i> Clubes</a>
+      <a th:href="@{/api/clubes}" target="_blank"><i class="bi bi-braces"></i> API REST</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container py-4 py-lg-5">
+
+  <!-- Mensajes del controlador -->
+  <div th:if="${ok}" class="alert alert-success alert-dismissible fade show d-flex gap-2" role="status">
+    <i class="bi bi-check-circle-fill"></i><span th:text="${ok}">Guardado</span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+  </div>
+  <div th:if="${error}" class="alert alert-danger alert-dismissible fade show d-flex gap-2" role="alert">
+    <i class="bi bi-exclamation-octagon-fill"></i><span th:text="${error}">Error</span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+  </div>
+
+  <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+    <div class="titulo">
+      <h1>Clubes</h1>
+      <p th:text="${#lists.size(clubes)} + ' club(es) con sus cuatro relaciones'">0 clubes</p>
+    </div>
+    <a class="btn btn-cancha" th:href="@{/}"><i class="bi bi-plus-lg me-1"></i>Nuevo club</a>
+  </div>
+
+  <!-- Sin clubes -->
+  <div class="vacio" th:if="${#lists.isEmpty(clubes)}">
+    <i class="bi bi-shield-plus"></i>
+    <p>Todavía no hay clubes. Crea un entrenador, jugadores, una asociación y competiciones, y luego arma el club.</p>
+    <a class="btn btn-cancha" th:href="@{/}">Ir a registrar</a>
+  </div>
+
+  <!-- Fichas de club -->
+  <div class="row row-cols-1 row-cols-xl-2 g-4" th:unless="${#lists.isEmpty(clubes)}">
+    <div class="col" th:each="c : ${clubes}">
+      <article class="ficha">
+        <header class="ficha-cabeza">
+          <span class="escudo" th:text="${#strings.substring(c.nombre, 0, 1)}">M</span>
+          <div>
+            <h2 th:text="${c.nombre}">Millonarios</h2>
+            <small th:text="'Club #' + ${c.id}">Club #1</small>
+          </div>
+        </header>
+
+        <div class="ficha-cuerpo">
+          <div class="bloque">
+            <span class="rel rel-11"><i class="bi bi-person-badge"></i> @OneToOne · Entrenador</span>
+            <p th:if="${c.entrenador != null}" th:text="${c.entrenador.nombreCompleto()}">Alberto Gamero</p>
+            <p class="sin" th:if="${c.entrenador == null}">Sin entrenador</p>
+          </div>
+
+          <div class="bloque">
+            <span class="rel rel-n1"><i class="bi bi-bank"></i> @ManyToOne · Asociación</span>
+            <p th:if="${c.asociacion != null}" th:text="${c.asociacion.siglas} + ' · ' + ${c.asociacion.pais}">FCF · Colombia</p>
+            <p class="sin" th:if="${c.asociacion == null}">Sin asociación</p>
+          </div>
+
+          <div class="bloque bloque-ancho">
+            <span class="rel rel-nm"><i class="bi bi-trophy"></i> @ManyToMany · Competiciones</span>
+            <div class="chips" th:unless="${#lists.isEmpty(c.competiciones)}">
+              <span class="chip" th:each="co : ${c.competiciones}" th:text="${co.nombre}">Liga BetPlay</span>
+            </div>
+            <p class="sin" th:if="${#lists.isEmpty(c.competiciones)}">No juega ninguna competición</p>
+          </div>
+
+          <div class="bloque bloque-ancho">
+            <span class="rel rel-1n"><i class="bi bi-people"></i>
+              <span th:text="'@OneToMany · Plantel (' + ${#lists.size(c.jugadores)} + ')'">@OneToMany · Plantel</span></span>
+            <ul class="plantel" th:unless="${#lists.isEmpty(c.jugadores)}">
+              <li th:each="j : ${c.jugadores}">
+                <span class="dorsal dorsal-sm" th:text="${j.numero}">10</span>
+                <span><span th:text="${j.nombreCompleto()}">David Macalister Silva</span>
+                  <small th:text="' · ' + ${j.posicion}"> · Volante</small></span>
+              </li>
+            </ul>
+            <p class="sin" th:if="${#lists.isEmpty(c.jugadores)}">Sin jugadores</p>
+          </div>
+        </div>
+
+        <footer class="ficha-pie">
+          <a class="btn btn-sm btn-linea" th:href="@{/clubes/{id}/editar(id=${c.id})}"><i class="bi bi-pencil me-1"></i>Editar</a>
+          <button type="button" class="btn btn-sm btn-linea text-danger"
+                  data-bs-toggle="modal" data-bs-target="#modalEliminar"
+                  th:data-ruta="@{/clubes/{id}/eliminar(id=${c.id})}" th:data-nombre="${c.nombre}"
+                  th:data-jugadores="${#lists.size(c.jugadores)}">
+            <i class="bi bi-trash me-1"></i>Eliminar
+          </button>
+        </footer>
+      </article>
+    </div>
+  </div>
+</main>
+
+<!-- Confirmación: eliminar club (cascada) -->
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="tituloEliminar" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4">
+      <div class="modal-body p-4">
+        <h2 class="h4 fw-bold" id="tituloEliminar">¿Eliminar <span id="clubEliminar"></span>?</h2>
+        <p class="text-secondary">También se eliminarán sus <strong id="jugadoresEliminar">0</strong> jugador(es), igual que un ON DELETE CASCADE.
+          El entrenador, la asociación y las competiciones no se borran.</p>
+        <form id="formEliminar" method="post" class="d-flex justify-content-end gap-2 mt-4">
+          <button type="button" class="btn btn-linea" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Eliminar club</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../static/js/app.js" th:src="@{/js/app.js}"></script>
+</body>
+</html>

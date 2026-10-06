@@ -1,0 +1,48 @@
+CLUBES MONGO - Relaciones con Spring Boot 4.1.1 + MongoDB Atlas (@DocumentReference)
+=====================================================================================
+
+Abrir en STS
+1. File > Import > Maven > Existing Maven Projects > carpeta clubes-mongo > Finish.
+2. Clic derecho en el proyecto > Run As > Spring Boot App.
+3. Paginas: http://localhost:8108          (registrar)
+            http://localhost:8108/listar   (clubes con sus relaciones)
+            http://localhost:8108/api/clubes (API REST, JSON)
+
+Paquetes (como los maneja el profe)
+  controlador  -> club_web (paginas), 5 controladores *_apirest y ManejadorErroresApi
+  modelo       -> Club, Entrenador, Jugador, Asociacion, Competicion, ClubFormulario
+                  y el id incremental (Identificable, Secuencia, SecuenciaListener)
+  repositorio  -> 5 interfaces *_repositorio (MongoRepository) y relaciones_repositorio
+                  (reglas de las relaciones: cascada y "no se puede borrar si esta en uso")
+
+Orden recomendado para probar
+1. Crear un entrenador, varios jugadores, una asociacion y dos competiciones.
+2. Crear el club y relacionarlo con ellos (pestaña Club).
+3. Ver /listar.
+
+Relaciones (todas desde Club)
+  @OneToOne   Club -> Entrenador        "entrenador": 1
+  @OneToMany  Club -> List<Jugador>     "jugadores": [1, 2]      (lazy = true)
+  @ManyToOne  Club -> Asociacion        "asociacion": 1
+  @ManyToMany Club -> List<Competicion> "competiciones": [1, 2]  (lazy = true)
+
+Reglas
+  - Un entrenador solo puede dirigir un club; un jugador solo puede estar en un club (409).
+  - Borrar un club borra sus jugadores (como ON DELETE CASCADE).
+  - No se puede borrar un entrenador, asociacion o competicion que use un club (409, como NO ACTION).
+
+API REST (Postman)
+  /api/clubes  /api/entrenadores  /api/jugadores  /api/asociaciones  /api/competiciones
+    GET (lista) | GET /{id} | POST | PUT /{id} | DELETE /{id}
+  Relaciones del club:
+    PUT    /api/clubes/{id}/entrenador/{entrenadorId}
+    DELETE /api/clubes/{id}/entrenador
+    POST   /api/clubes/{id}/jugadores/{jugadorId}
+    DELETE /api/clubes/{id}/jugadores/{jugadorId}
+    PUT    /api/clubes/{id}/asociacion/{asociacionId}
+    DELETE /api/clubes/{id}/asociacion
+    POST   /api/clubes/{id}/competiciones/{competicionId}
+    DELETE /api/clubes/{id}/competiciones/{competicionId}
+
+En Atlas (Browse Collections > clubesdb): clubes, entrenadores, jugadores,
+asociaciones, competiciones y secuencias (contador de ids).

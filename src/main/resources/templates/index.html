@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registrar | Relaciones FC</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="../static/css/estadio.css" th:href="@{/css/estadio.css}">
+</head>
+<body>
+
+<!-- ===== Encabezado para moverse entre las páginas ===== -->
+<header class="marcador">
+  <div class="container d-flex flex-wrap align-items-center justify-content-between gap-3 py-3">
+    <a class="marca" th:href="@{/}">
+      <span class="marca-balon"><i class="bi bi-dribbble"></i></span> Relaciones FC
+    </a>
+    <nav class="menu" aria-label="Secciones">
+      <a class="activo" aria-current="page" th:href="@{/}"><i class="bi bi-pencil-square"></i> Registrar</a>
+      <a th:href="@{/listar}"><i class="bi bi-shield-shaded"></i> Clubes</a>
+      <a th:href="@{/api/clubes}" target="_blank"><i class="bi bi-braces"></i> API REST</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container py-4 py-lg-5">
+
+  <!-- Mensajes del controlador -->
+  <div th:if="${ok}" class="alert alert-success alert-dismissible fade show d-flex gap-2" role="status">
+    <i class="bi bi-check-circle-fill"></i><span th:text="${ok}">Guardado</span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+  </div>
+  <div th:if="${error}" class="alert alert-danger alert-dismissible fade show d-flex gap-2" role="alert">
+    <i class="bi bi-exclamation-octagon-fill"></i><span th:text="${error}">Error</span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+  </div>
+
+  <div class="titulo mb-4">
+    <h1>Registrar</h1>
+    <p>Primero crea entrenadores, jugadores, asociaciones y competiciones. Después arma el club y relaciónalo con ellos en la pestaña Club.</p>
+  </div>
+
+  <!-- Pestañas: una por entidad -->
+  <ul class="nav pestanas" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" th:classappend="${pestana == 'club'} ? 'active'" type="button"
+              data-bs-toggle="pill" data-bs-target="#tab-club" role="tab" aria-controls="tab-club"><i class="bi bi-shield-shaded"></i> Club</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" th:classappend="${pestana == 'entrenador'} ? 'active'" type="button"
+              data-bs-toggle="pill" data-bs-target="#tab-entrenador" role="tab" aria-controls="tab-entrenador"><i class="bi bi-person-badge"></i> Entrenador <span class="rel rel-11">@OneToOne</span></button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" th:classappend="${pestana == 'jugador'} ? 'active'" type="button"
+              data-bs-toggle="pill" data-bs-target="#tab-jugador" role="tab" aria-controls="tab-jugador"><i class="bi bi-person-arms-up"></i> Jugador <span class="rel rel-1n">@OneToMany</span></button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" th:classappend="${pestana == 'asociacion'} ? 'active'" type="button"
+              data-bs-toggle="pill" data-bs-target="#tab-asociacion" role="tab" aria-controls="tab-asociacion"><i class="bi bi-bank"></i> Asociación <span class="rel rel-n1">@ManyToOne</span></button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" th:classappend="${pestana == 'competicion'} ? 'active'" type="button"
+              data-bs-toggle="pill" data-bs-target="#tab-competicion" role="tab" aria-controls="tab-competicion"><i class="bi bi-trophy"></i> Competición <span class="rel rel-nm">@ManyToMany</span></button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- ===================== CLUB ===================== -->
+    <section class="tab-pane fade" th:classappend="${pestana == 'club'} ? 'show active'" id="tab-club" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <form class="panel" th:action="@{/clubes/guardar}" th:object="${clubForm}" method="post">
+            <h2 th:text="*{id == null} ? 'Nuevo club' : 'Editar club #' + *{id}">Nuevo club</h2>
+            <input type="hidden" th:field="*{id}">
+
+            <div class="mb-3">
+              <label class="form-label" for="c-nombre">Nombre del club</label>
+              <input type="text" class="form-control" id="c-nombre" th:field="*{nombre}" placeholder="Ej. Millonarios" required>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label" for="c-entrenador">Entrenador <span class="rel rel-11">@OneToOne</span></label>
+                <select class="form-select" id="c-entrenador" th:field="*{entrenadorId}">
+                  <option value="">Sin entrenador</option>
+                  <option th:each="e : ${entrenadoresLibres}" th:value="${e.id}"
+                          th:text="${e.nombreCompleto()} + ' (' + ${e.nacionalidad} + ')'">Alberto Gamero</option>
+                </select>
+                <div class="ayuda mt-1">Solo aparecen entrenadores que no dirigen otro club.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="c-asociacion">Asociación <span class="rel rel-n1">@ManyToOne</span></label>
+                <select class="form-select" id="c-asociacion" th:field="*{asociacionId}">
+                  <option value="">Sin asociación</option>
+                  <option th:each="a : ${listaAsociaciones}" th:value="${a.id}"
+                          th:text="${a.siglas} + ' - ' + ${a.nombre}">FCF</option>
+                </select>
+              </div>
+            </div>
+
+            <fieldset class="mb-3">
+              <legend class="form-label">Plantel <span class="rel rel-1n">@OneToMany</span></legend>
+              <div class="casillas" th:unless="${#lists.isEmpty(jugadoresLibres)}">
+                <label class="casilla" th:each="j : ${jugadoresLibres}">
+                  <input class="form-check-input" type="checkbox" th:field="*{jugadoresIds}" th:value="${j.id}">
+                  <span class="dorsal dorsal-sm" th:text="${j.numero}">10</span>
+                  <span th:text="${j.nombreCompleto()}">David Macalister Silva</span>
+                </label>
+              </div>
+              <p class="vacio-mini" th:if="${#lists.isEmpty(jugadoresLibres)}">No hay jugadores libres. Créalos en la pestaña Jugador.</p>
+            </fieldset>
+
+            <fieldset class="mb-4">
+              <legend class="form-label">Competiciones <span class="rel rel-nm">@ManyToMany</span></legend>
+              <div class="casillas" th:unless="${#lists.isEmpty(listaCompeticiones)}">
+                <label class="casilla" th:each="co : ${listaCompeticiones}">
+                  <input class="form-check-input" type="checkbox" th:field="*{competicionesIds}" th:value="${co.id}">
+                  <i class="bi bi-trophy text-warning"></i>
+                  <span th:text="${co.nombre}">Copa Libertadores</span>
+                </label>
+              </div>
+              <p class="vacio-mini" th:if="${#lists.isEmpty(listaCompeticiones)}">No hay competiciones. Créalas en la pestaña Competición.</p>
+            </fieldset>
+
+            <div class="d-flex flex-wrap gap-2">
+              <button type="submit" class="btn btn-cancha"><i class="bi bi-check2-circle me-1"></i>
+                <span th:text="*{id == null} ? 'Guardar club' : 'Guardar cambios'">Guardar club</span></button>
+              <a class="btn btn-linea" th:if="*{id != null}" th:href="@{/}">Cancelar</a>
+            </div>
+          </form>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="panel">
+            <h2>Clubes registrados <span class="text-secondary" th:text="'(' + ${#lists.size(listaClubes)} + ')'">(0)</span></h2>
+            <ul class="registrados" th:unless="${#lists.isEmpty(listaClubes)}">
+              <li th:each="c : ${listaClubes}">
+                <span class="siglas" th:text="${#strings.substring(c.nombre, 0, 1)}">M</span>
+                <div class="datos">
+                  <strong th:text="${c.nombre}">Millonarios</strong>
+                  <small th:text="${#lists.size(c.jugadores)} + ' jugadores · ' + ${#lists.size(c.competiciones)} + ' competiciones'">0 jugadores</small>
+                </div>
+                <div class="acciones">
+                  <a class="btn btn-sm btn-linea" th:href="@{/clubes/{id}/editar(id=${c.id})}" title="Editar" aria-label="Editar"><i class="bi bi-pencil"></i></a>
+                </div>
+              </li>
+            </ul>
+            <p class="vacio-mini" th:if="${#lists.isEmpty(listaClubes)}">Aún no hay clubes.</p>
+            <a class="btn btn-linea w-100 mt-3" th:href="@{/listar}">Ver clubes con todas sus relaciones</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ENTRENADOR ===================== -->
+    <section class="tab-pane fade" th:classappend="${pestana == 'entrenador'} ? 'show active'" id="tab-entrenador" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <form class="panel" th:action="@{/entrenadores/guardar}" th:object="${entrenador}" method="post">
+            <h2 th:text="*{id == null} ? 'Nuevo entrenador' : 'Editar entrenador #' + *{id}">Nuevo entrenador</h2>
+            <input type="hidden" th:field="*{id}">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label" for="e-nombre">Nombre</label>
+                <input type="text" class="form-control" id="e-nombre" th:field="*{nombre}" placeholder="Alberto" required>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="e-apellido">Apellido</label>
+                <input type="text" class="form-control" id="e-apellido" th:field="*{apellido}" placeholder="Gamero" required>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="e-edad">Edad</label>
+                <input type="number" class="form-control" id="e-edad" th:field="*{edad}" min="18" max="100" required>
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label" for="e-nacionalidad">Nacionalidad</label>
+                <input type="text" class="form-control" id="e-nacionalidad" th:field="*{nacionalidad}" placeholder="Colombiana">
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-cancha"><i class="bi bi-check2-circle me-1"></i>Guardar entrenador</button>
+              <a class="btn btn-linea" th:if="*{id != null}" th:href="@{/(pestana='entrenador')}">Cancelar</a>
+            </div>
+          </form>
+        </div>
+        <div class="col-lg-7">
+          <div class="panel">
+            <h2>Entrenadores <span class="text-secondary" th:text="'(' + ${#lists.size(listaEntrenadores)} + ')'">(0)</span></h2>
+            <ul class="registrados" th:unless="${#lists.isEmpty(listaEntrenadores)}">
+              <li th:each="e : ${listaEntrenadores}">
+                <i class="bi bi-person-badge fs-4 text-primary"></i>
+                <div class="datos">
+                  <strong th:text="${e.nombreCompleto()}">Alberto Gamero</strong>
+                  <small th:text="${e.edad} + ' años · ' + ${e.nacionalidad}">62 años · Colombiana</small>
+                </div>
+                <span class="estado estado-ocupado" th:if="${clubDelEntrenador.containsKey(e.id)}"
+                      th:text="'Dirige ' + ${clubDelEntrenador.get(e.id)}">Dirige Millonarios</span>
+                <span class="estado estado-libre" th:unless="${clubDelEntrenador.containsKey(e.id)}">Libre</span>
+                <div class="acciones">
+                  <a class="btn btn-sm btn-linea" th:href="@{/entrenadores/{id}/editar(id=${e.id})}" title="Editar" aria-label="Editar"><i class="bi bi-pencil"></i></a>
+                  <form class="d-inline" method="post" th:action="@{/entrenadores/{id}/eliminar(id=${e.id})}"
+                      onsubmit="return confirm('¿Eliminar este entrenador?');">
+                  <button type="submit" class="btn btn-sm btn-linea text-danger" title="Eliminar" aria-label="Eliminar"><i class="bi bi-trash"></i></button>
+                </form>
+                </div>
+              </li>
+            </ul>
+            <p class="vacio-mini" th:if="${#lists.isEmpty(listaEntrenadores)}">Aún no hay entrenadores.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== JUGADOR ===================== -->
+    <section class="tab-pane fade" th:classappend="${pestana == 'jugador'} ? 'show active'" id="tab-jugador" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <form class="panel" th:action="@{/jugadores/guardar}" th:object="${jugador}" method="post">
+            <h2 th:text="*{id == null} ? 'Nuevo jugador' : 'Editar jugador #' + *{id}">Nuevo jugador</h2>
+            <input type="hidden" th:field="*{id}">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label" for="j-nombre">Nombre</label>
+                <input type="text" class="form-control" id="j-nombre" th:field="*{nombre}" placeholder="David" required>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="j-apellido">Apellido</label>
+                <input type="text" class="form-control" id="j-apellido" th:field="*{apellido}" placeholder="Macalister Silva" required>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="j-numero">Número</label>
+                <input type="number" class="form-control" id="j-numero" th:field="*{numero}" min="1" max="99" required>
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label" for="j-posicion">Posición</label>
+                <select class="form-select" id="j-posicion" th:field="*{posicion}" required>
+                  <option value="">Elige una posición</option>
+                  <option value="Portero">Portero</option>
+                  <option value="Defensa">Defensa</option>
+                  <option value="Volante">Volante</option>
+                  <option value="Delantero">Delantero</option>
+                </select>
+              </div>
+            </div>
+            <p class="ayuda mt-3 mb-0">El jugador se agrega a un club desde la pestaña Club.</p>
+            <div class="d-flex gap-2 mt-3">
+              <button type="submit" class="btn btn-cancha"><i class="bi bi-check2-circle me-1"></i>Guardar jugador</button>
+              <a class="btn btn-linea" th:if="*{id != null}" th:href="@{/(pestana='jugador')}">Cancelar</a>
+            </div>
+          </form>
+        </div>
+        <div class="col-lg-7">
+          <div class="panel">
+            <h2>Jugadores <span class="text-secondary" th:text="'(' + ${#lists.size(listaJugadores)} + ')'">(0)</span></h2>
+            <ul class="registrados" th:unless="${#lists.isEmpty(listaJugadores)}">
+              <li th:each="j : ${listaJugadores}">
+                <span class="dorsal" th:text="${j.numero}">10</span>
+                <div class="datos">
+                  <strong th:text="${j.nombreCompleto()}">David Macalister Silva</strong>
+                  <small th:text="${j.posicion}">Volante</small>
+                </div>
+                <span class="estado estado-ocupado" th:if="${clubDelJugador.containsKey(j.id)}"
+                      th:text="${clubDelJugador.get(j.id)}">Millonarios</span>
+                <span class="estado estado-libre" th:unless="${clubDelJugador.containsKey(j.id)}">Libre</span>
+                <div class="acciones">
+                  <a class="btn btn-sm btn-linea" th:href="@{/jugadores/{id}/editar(id=${j.id})}" title="Editar" aria-label="Editar"><i class="bi bi-pencil"></i></a>
+                  <form class="d-inline" method="post" th:action="@{/jugadores/{id}/eliminar(id=${j.id})}"
+                      onsubmit="return confirm('¿Eliminar este jugador?');">
+                  <button type="submit" class="btn btn-sm btn-linea text-danger" title="Eliminar" aria-label="Eliminar"><i class="bi bi-trash"></i></button>
+                </form>
+                </div>
+              </li>
+            </ul>
+            <p class="vacio-mini" th:if="${#lists.isEmpty(listaJugadores)}">Aún no hay jugadores.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ASOCIACIÓN ===================== -->
+    <section class="tab-pane fade" th:classappend="${pestana == 'asociacion'} ? 'show active'" id="tab-asociacion" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <form class="panel" th:action="@{/asociaciones/guardar}" th:object="${asociacion}" method="post">
+            <h2 th:text="*{id == null} ? 'Nueva asociación' : 'Editar asociación #' + *{id}">Nueva asociación</h2>
+            <input type="hidden" th:field="*{id}">
+            <div class="row g-3">
+              <div class="col-sm-8">
+                <label class="form-label" for="a-nombre">Nombre</label>
+                <input type="text" class="form-control" id="a-nombre" th:field="*{nombre}" placeholder="Federación Colombiana de Fútbol" required>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="a-siglas">Siglas</label>
+                <input type="text" class="form-control" id="a-siglas" th:field="*{siglas}" placeholder="FCF" maxlength="10" required>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="a-pais">País</label>
+                <input type="text" class="form-control" id="a-pais" th:field="*{pais}" placeholder="Colombia">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="a-presidente">Presidente</label>
+                <input type="text" class="form-control" id="a-presidente" th:field="*{presidente}" placeholder="Ramón Jesurún">
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-cancha"><i class="bi bi-check2-circle me-1"></i>Guardar asociación</button>
+              <a class="btn btn-linea" th:if="*{id != null}" th:href="@{/(pestana='asociacion')}">Cancelar</a>
+            </div>
+          </form>
+        </div>
+        <div class="col-lg-7">
+          <div class="panel">
+            <h2>Asociaciones <span class="text-secondary" th:text="'(' + ${#lists.size(listaAsociaciones)} + ')'">(0)</span></h2>
+            <ul class="registrados" th:unless="${#lists.isEmpty(listaAsociaciones)}">
+              <li th:each="a : ${listaAsociaciones}">
+                <span class="siglas" th:text="${a.siglas}">FCF</span>
+                <div class="datos">
+                  <strong th:text="${a.nombre}">Federación Colombiana de Fútbol</strong>
+                  <small th:text="${a.pais} + ' · Presidente: ' + ${a.presidente}">Colombia</small>
+                </div>
+                <div class="acciones">
+                  <a class="btn btn-sm btn-linea" th:href="@{/asociaciones/{id}/editar(id=${a.id})}" title="Editar" aria-label="Editar"><i class="bi bi-pencil"></i></a>
+                  <form class="d-inline" method="post" th:action="@{/asociaciones/{id}/eliminar(id=${a.id})}"
+                      onsubmit="return confirm('¿Eliminar esta asociación?');">
+                  <button type="submit" class="btn btn-sm btn-linea text-danger" title="Eliminar" aria-label="Eliminar"><i class="bi bi-trash"></i></button>
+                </form>
+                </div>
+              </li>
+            </ul>
+            <p class="vacio-mini" th:if="${#lists.isEmpty(listaAsociaciones)}">Aún no hay asociaciones.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== COMPETICIÓN ===================== -->
+    <section class="tab-pane fade" th:classappend="${pestana == 'competicion'} ? 'show active'" id="tab-competicion" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <form class="panel" th:action="@{/competiciones/guardar}" th:object="${competicion}" method="post">
+            <h2 th:text="*{id == null} ? 'Nueva competición' : 'Editar competición #' + *{id}">Nueva competición</h2>
+            <input type="hidden" th:field="*{id}">
+            <div class="row g-3">
+              <div class="col-sm-7">
+                <label class="form-label" for="co-nombre">Nombre</label>
+                <input type="text" class="form-control" id="co-nombre" th:field="*{nombre}" placeholder="Copa Libertadores" required>
+              </div>
+              <div class="col-sm-5">
+                <label class="form-label" for="co-premio">Premio (USD)</label>
+                <input type="number" class="form-control" id="co-premio" th:field="*{montoPremio}" min="0" required>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="co-inicio">Fecha de inicio</label>
+                <input type="date" class="form-control" id="co-inicio" th:field="*{fechaInicio}" required>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="co-fin">Fecha de fin</label>
+                <input type="date" class="form-control" id="co-fin" th:field="*{fechaFin}" required>
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-cancha"><i class="bi bi-check2-circle me-1"></i>Guardar competición</button>
+              <a class="btn btn-linea" th:if="*{id != null}" th:href="@{/(pestana='competicion')}">Cancelar</a>
+            </div>
+          </form>
+        </div>
+        <div class="col-lg-7">
+          <div class="panel">
+            <h2>Competiciones <span class="text-secondary" th:text="'(' + ${#lists.size(listaCompeticiones)} + ')'">(0)</span></h2>
+            <ul class="registrados" th:unless="${#lists.isEmpty(listaCompeticiones)}">
+              <li th:each="co : ${listaCompeticiones}">
+                <i class="bi bi-trophy-fill fs-4 text-warning"></i>
+                <div class="datos">
+                  <strong th:text="${co.nombre}">Copa Libertadores</strong>
+                  <small th:text="${#temporals.format(co.fechaInicio, 'dd/MM/yyyy')} + ' al ' + ${#temporals.format(co.fechaFin, 'dd/MM/yyyy')} + ' · Premio: $' + ${#numbers.formatInteger(co.montoPremio, 1, 'POINT')}">fechas</small>
+                </div>
+                <div class="acciones">
+                  <a class="btn btn-sm btn-linea" th:href="@{/competiciones/{id}/editar(id=${co.id})}" title="Editar" aria-label="Editar"><i class="bi bi-pencil"></i></a>
+                  <form class="d-inline" method="post" th:action="@{/competiciones/{id}/eliminar(id=${co.id})}"
+                      onsubmit="return confirm('¿Eliminar esta competición?');">
+                  <button type="submit" class="btn btn-sm btn-linea text-danger" title="Eliminar" aria-label="Eliminar"><i class="bi bi-trash"></i></button>
+                </form>
+                </div>
+              </li>
+            </ul>
+            <p class="vacio-mini" th:if="${#lists.isEmpty(listaCompeticiones)}">Aún no hay competiciones.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../static/js/app.js" th:src="@{/js/app.js}"></script>
+</body>
+</html>
